@@ -7,8 +7,11 @@
 
     <template v-else>
       <div class="summary-header">
-        <span class="eco-label">{{ eco.eco_no }}</span>
-        <span class="summary-title">분석 Summary</span>
+        <div class="summary-header-left">
+          <span class="eco-label">{{ eco.eco_no }}</span>
+          <span class="summary-title">분석 Summary</span>
+        </div>
+        <button class="detail-btn" @click="goDetail">상세 결과 →</button>
       </div>
 
       <div v-if="loading" class="loading">로딩 중...</div>
@@ -39,7 +42,7 @@
               :stroke-dashoffset="301.6 * (1 - summary.detection_rate / 100)"
               stroke-linecap="round"
               transform="rotate(-90 60 60)"
-              style="transition: stroke-dashoffset 0.6s ease"
+              style="transition:stroke-dashoffset 0.6s ease"
             />
             <text x="60" y="56" text-anchor="middle" font-size="18" font-weight="700" fill="#e8eaf0">
               {{ summary.detection_rate }}%
@@ -50,15 +53,10 @@
 
         <div class="items-title">카테고리별 분석 결과</div>
         <div class="item-list">
-          <div
-            v-for="item in summary.items"
-            :key="item.category"
-            class="item-row"
-          >
+          <div v-for="item in summary.items" :key="item.category" class="item-row">
             <div class="item-cat">{{ item.category }}</div>
             <div class="item-bar-wrap">
-              <div
-                class="item-bar"
+              <div class="item-bar"
                 :style="{ width: (item.detected / item.total * 100) + '%', background: barColor(item.significance) }"
               ></div>
             </div>
@@ -79,85 +77,42 @@ import { fetchEcoSummary } from '@/api';
 
 export default {
   name: 'EcoSummary',
-  props: {
-    eco: { type: Object, default: null },
-  },
-  data() {
-    return { summary: null, loading: false };
-  },
+  props: { eco: { type: Object, default: null } },
+  data() { return { summary: null, loading: false }; },
   watch: {
-    eco(val) {
-      if (val) this.load(val.eco_no);
-      else this.summary = null;
-    },
+    eco(val) { val ? this.load(val.eco_no) : (this.summary = null); },
   },
   methods: {
     async load(ecoNo) {
       this.loading = true;
       this.summary = null;
-      try {
-        const { data } = await fetchEcoSummary(ecoNo);
-        this.summary = data;
-      } finally {
-        this.loading = false;
-      }
+      try { const { data } = await fetchEcoSummary(ecoNo); this.summary = data; }
+      finally { this.loading = false; }
+    },
+    goDetail() {
+      if (this.eco) this.$router.push(`/eco/${this.eco.eco_no}`);
     },
     barColor(sig) {
       return { HIGH: '#f76060', MEDIUM: '#f7c948', LOW: '#4f8ef7', NONE: '#3ecf8e' }[sig] || '#4f8ef7';
     },
-    rateClass(rate) {
-      if (rate > 0) return 'up';
-      if (rate < 0) return 'down';
-      return '';
-    },
+    rateClass(r) { return r > 0 ? 'up' : r < 0 ? 'down' : ''; },
   },
 };
 </script>
 
 <style scoped>
-.summary-panel {
-  background: #1e2433;
-  border: 1px solid #2d3448;
-  border-radius: 8px;
-  padding: 20px;
-  height: 100%;
-  min-height: 400px;
-}
-.summary-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #55607a;
-  font-size: 13px;
-  gap: 12px;
-  min-height: 300px;
-}
+.summary-panel { background: #1e2433; border: 1px solid #2d3448; border-radius: 8px; padding: 20px; min-height: 400px; }
+.summary-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #55607a; font-size: 13px; gap: 12px; min-height: 300px; }
 .empty-icon { font-size: 36px; }
-.summary-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #2d3448;
-}
+.summary-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2d3448; }
+.summary-header-left { display: flex; align-items: center; gap: 10px; }
 .eco-label { font-family: monospace; color: #4f8ef7; font-size: 13px; font-weight: 600; }
 .summary-title { color: #e8eaf0; font-size: 14px; font-weight: 600; }
+.detail-btn { background: #1a2a50; border: 1px solid #3a5080; border-radius: 6px; color: #7eb3ff; padding: 5px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+.detail-btn:hover { background: #223565; }
 .loading { color: #8890a4; font-size: 13px; padding: 20px 0; }
-.summary-stats {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.sstat {
-  flex: 1;
-  background: #161b27;
-  border-radius: 6px;
-  padding: 12px;
-  text-align: center;
-}
+.summary-stats { display: flex; gap: 12px; margin-bottom: 16px; }
+.sstat { flex: 1; background: #161b27; border-radius: 6px; padding: 12px; text-align: center; }
 .sstat.highlight { background: #1a2540; border: 1px solid #2d4080; }
 .sstat-label { font-size: 11px; color: #8890a4; margin-bottom: 4px; }
 .sstat-value { font-size: 22px; font-weight: 700; color: #e8eaf0; }
@@ -165,12 +120,7 @@ export default {
 .donut { width: 110px; height: 110px; }
 .items-title { font-size: 12px; color: #8890a4; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
 .item-list { display: flex; flex-direction: column; gap: 7px; }
-.item-row {
-  display: grid;
-  grid-template-columns: 60px 1fr 44px 48px 54px;
-  align-items: center;
-  gap: 8px;
-}
+.item-row { display: grid; grid-template-columns: 60px 1fr 44px 48px 54px; align-items: center; gap: 8px; }
 .item-cat { font-size: 12px; color: #c8ccd8; }
 .item-bar-wrap { background: #161b27; border-radius: 4px; height: 6px; overflow: hidden; }
 .item-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
@@ -178,13 +128,7 @@ export default {
 .item-rate { font-size: 11px; font-weight: 600; text-align: right; }
 .item-rate.up { color: #f76060; }
 .item-rate.down { color: #3ecf8e; }
-.sig-chip {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-align: center;
-}
+.sig-chip { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; text-align: center; }
 .sig-chip.high { background: #3a1010; color: #f76060; }
 .sig-chip.medium { background: #2e2810; color: #f7c948; }
 .sig-chip.low { background: #102040; color: #4f8ef7; }
